@@ -719,7 +719,6 @@ async function sendToTeacher(){
     await fetch(url,{
       method:'POST',
       mode:'no-cors',
-      headers:{'Content-Type':'application/json'},
       body:JSON.stringify(collectData())
     });
     // no-cors 이므로 응답 내용을 읽을 수 없지만, 에러가 없으면 성공으로 처리
