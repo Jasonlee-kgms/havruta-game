@@ -475,14 +475,8 @@ const s1Results={s1q1:'-',s1q2:'-',s1q3:'-',s1q4:'-',s1q5:'-'};
 let agreeSelected=null;
 let playerName='', playerClass='';
 
-// GAS URL을 로컬스토리지에 유지 (교사가 한 번만 입력하면 됨)
-window.addEventListener('DOMContentLoaded',()=>{
-  const saved=localStorage.getItem('gas_url')||'';
-  document.getElementById('gas-url-input').value=saved;
-});
-function saveGasUrl(){
-  localStorage.setItem('gas_url',document.getElementById('gas-url-input').value.trim());
-}
+// ★ 선생님 GAS 웹앱 URL — 여기에 붙여넣으세요
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwxy7DMY3TQjcVNfepCBYFqqg6S37ooqpRW3jAqj6O3_4yQVHrgozXxKHOFOCvdXso2/exec';
 
 // ─────────────────────────────────────────
 function startGame(){
@@ -690,29 +684,22 @@ function collectData(){
 // 전송 (GAS 웹앱)
 // ─────────────────────────────────────────
 async function sendToTeacher(){
-  const url=document.getElementById('gas-url-input').value.trim();
   const st=document.getElementById('send-status');
-  if(!url){
+  if(!GAS_URL){
     st.className='send-status error';
-    st.textContent='⚠ 웹앱 URL이 입력되지 않았습니다. 선생님께 URL을 받아 위 입력창에 붙여넣어 주세요. 또는 아래 "결과 텍스트 복사" 버튼을 사용하세요.';
+    st.textContent='⚠ GAS URL이 설정되지 않았습니다. 아래 "결과 텍스트 복사" 버튼을 사용해 주세요.';
     return;
   }
   st.className='send-status loading';
   st.textContent='⏳ 전송 중...';
   try{
-    await fetch(url,{
-      method:'POST',
-      const params = new URLSearchParams({data: JSON.stringify(collectData())});
-await fetch(url + '?' + params.toString(), {mode:'no-cors'});
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(collectData())
-    });
-    // no-cors 이므로 응답 내용을 읽을 수 없지만, 에러가 없으면 성공으로 처리
+    const params=new URLSearchParams({data:JSON.stringify(collectData())});
+    await fetch(GAS_URL+'?'+params.toString(),{mode:'no-cors'});
     st.className='send-status success';
     st.textContent='✅ 전송 완료! 선생님 스프레드시트에 결과가 기록되었습니다. 수고했어요! 🎉';
   }catch(e){
     st.className='send-status error';
-    st.textContent='❌ 전송 실패: '+e.message+'\n아래 "결과 텍스트 복사" 버튼으로 직접 전달해 주세요.';
+    st.textContent='❌ 전송 실패: '+e.message+' — 아래 "결과 텍스트 복사" 버튼을 사용해 주세요.';
   }
 }
 
@@ -792,4 +779,3 @@ function launchConfetti(){
 </script>
 </body>
 </html>
-
