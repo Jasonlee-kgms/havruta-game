@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>길모퉁이에서 만난 사람 – 하브루타 아케이드</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0a0a1a;--panel:#11112a;--border:#3a3a6e;--neon-y:#ffe600;--neon-g:#00ffaa;--neon-p:#cc44ff;--neon-r:#ff4466;--neon-b:#44aaff;--text:#e8e8ff;--dim:#7777aa;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.15) 2px,rgba(0,0,0,.15) 4px);pointer-events:none;z-index:9999;}
+  .stars{position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(1px 1px at 12% 22%,#fff,transparent),radial-gradient(1px 1px at 33% 68%,#fff,transparent),radial-gradient(1px 1px at 57% 12%,#fff,transparent),radial-gradient(1px 1px at 78% 54%,#fff,transparent),radial-gradient(1px 1px at 48% 88%,#fff,transparent),radial-gradient(1px 1px at 91% 32%,#fff,transparent),radial-gradient(1px 1px at 22% 83%,#fff,transparent),radial-gradient(1px 1px at 66% 44%,#fff,transparent),radial-gradient(1px 1px at 5% 60%,#fff,transparent),radial-gradient(1px 1px at 85% 80%,#fff,transparent);}
+  #app{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:20px 16px 60px;}
+
+  /* TITLE */
+  #title-screen{text-align:center;padding:36px 0 16px;}
+  .game-logo{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--neon-y);text-shadow:0 0 12px var(--neon-y),0 0 30px rgba(255,230,0,.4);line-height:2.2;letter-spacing:1px;margin-bottom:6px;}
+  .game-sub{font-family:'Press Start 2P',monospace;font-size:8px;color:var(--neon-g);text-shadow:0 0 8px var(--neon-g);margin-bottom:28px;letter-spacing:2px;}
+  .name-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:28px;}
+  .name-input{background:#0d0d1f;border:2px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:14px;width:180px;transition:border-color .2s;}
+  .name-input:focus{outline:none;border-color:var(--neon-y);}
+  .name-input::placeholder{color:var(--dim);}
+  .stage-preview{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:28px;}
+  .sbp{font-size:11px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);color:var(--dim);}
+  .btn-start{font-family:'Press Start 2P',monospace;font-size:11px;padding:16px 36px;background:rgba(255,230,0,.12);color:var(--neon-y);border:2px solid var(--neon-y);border-radius:8px;cursor:pointer;animation:pulseBtn 1.6s infinite;letter-spacing:1px;}
+  @keyframes pulseBtn{0%,100%{box-shadow:0 0 24px rgba(255,230,0,.35);}50%{box-shadow:0 0 40px rgba(255,230,0,.6);}}
+  .blink{animation:blinker 1s step-start infinite;}
+  @keyframes blinker{50%{opacity:0}}
+
+  /* HUD */
+  #hud{display:none;justify-content:space-between;align-items:center;background:var(--panel);border:2px solid var(--border);border-radius:8px;padding:10px 18px;margin-bottom:20px;flex-wrap:wrap;gap:8px;}
+  .hud-item{font-family:'Press Start 2P',monospace;font-size:8px;line-height:1.8;}
+  .hud-label{color:var(--dim);}
+  .hud-val{color:var(--neon-y);}
+  .hearts{font-size:14px;letter-spacing:2px;}
+  .heart-full{color:var(--neon-r);}
+  .heart-empty{color:var(--border);}
+  .hud-name{font-size:11px;color:var(--neon-b);font-weight:700;font-family:'Noto Sans KR',sans-serif;}
+
+  /* STAGE MAP */
+  #stage-map{display:flex;justify-content:center;align-items:center;gap:0;margin-bottom:24px;flex-wrap:wrap;}
+  .stage-node{display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .stage-dot{width:44px;height:44px;border-radius:50%;border:3px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Press Start 2P',monospace;font-size:10px;transition:all .3s;}
+  .stage-dot.locked{background:#111;color:var(--border);}
+  .stage-dot.active{border-color:var(--neon-y);background:#1a1a00;color:var(--neon-y);box-shadow:0 0 14px var(--neon-y);animation:pulse 1.2s infinite;}
+  .stage-dot.done{border-color:var(--neon-g);background:#001a0e;color:var(--neon-g);box-shadow:0 0 10px rgba(0,255,170,.5);}
+  .stage-label{font-size:9px;color:var(--dim);text-align:center;max-width:80px;line-height:1.4;font-weight:700;}
+  .stage-label.active-label{color:var(--text);}
+  .stage-connector{width:36px;height:3px;background:var(--border);margin-bottom:24px;flex-shrink:0;}
+  .stage-connector.lit{background:var(--neon-g);box-shadow:0 0 6px var(--neon-g);}
+  @keyframes pulse{0%,100%{box-shadow:0 0 14px var(--neon-y);}50%{box-shadow:0 0 28px var(--neon-y),0 0 50px rgba(255,230,0,.3);}}
+
+  /* PANEL */
+  .game-panel{background:var(--panel);border:2px solid var(--border);border-radius:12px;padding:28px 28px 24px;margin-bottom:20px;display:none;}
+  .game-panel.active{display:block;}
+  .stage-header{display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+  .stage-badge{font-family:'Press Start 2P',monospace;font-size:9px;padding:6px 12px;border-radius:6px;border:2px solid;flex-shrink:0;}
+  .badge-s1{color:var(--neon-y);border-color:var(--neon-y);background:rgba(255,230,0,.07);}
+  .badge-s2{color:var(--neon-g);border-color:var(--neon-g);background:rgba(0,255,170,.07);}
+  .badge-s3{color:var(--neon-p);border-color:var(--neon-p);background:rgba(204,68,255,.07);}
+  .badge-s4{color:var(--neon-b);border-color:var(--neon-b);background:rgba(68,170,255,.07);}
+  .stage-title{font-size:16px;font-weight:900;line-height:1.4;}
+  .stage-desc{font-size:12px;color:var(--dim);margin-top:3px;}
+  .stage-instruction{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:12px;color:var(--dim);margin-bottom:20px;line-height:1.9;}
+  .stage-instruction strong{color:var(--text);}
+
+  /* Q BLOCKS */
+  .q-block{margin-bottom:28px;}
+  .q-num{font-family:'Press Start 2P',monospace;font-size:8px;color:var(--neon-y);margin-bottom:8px;}
+  .q-text{font-size:14px;font-weight:700;line-height:1.7;margin-bottom:14px;}
+  .q-hl{color:var(--neon-y);}
+
+  /* MCQ */
+  .mcq-options{display:flex;flex-direction:column;gap:8px;}
+  .mcq-btn{background:#0d0d1f;border:2px solid var(--border);border-radius:8px;padding:12px 16px;color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:13px;cursor:pointer;text-align:left;transition:all .2s;display:flex;align-items:center;gap:10px;line-height:1.5;}
+  .mcq-btn:hover:not(:disabled){border-color:var(--neon-b);background:rgba(68,170,255,.08);transform:translateX(4px);}
+  .mcq-btn:disabled{cursor:default;}
+  .mcq-btn.correct{border-color:var(--neon-g)!important;background:rgba(0,255,170,.12)!important;color:var(--neon-g);}
+  .mcq-btn.wrong{border-color:var(--neon-r)!important;background:rgba(255,68,102,.10)!important;color:var(--neon-r);}
+  .mcq-key{font-family:'Press Start 2P',monospace;font-size:8px;width:22px;height:22px;border-radius:4px;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .feedback-msg{margin-top:10px;padding:10px 14px;border-radius:6px;font-size:12px;font-weight:700;display:none;}
+  .feedback-msg.ok{display:block;background:rgba(0,255,170,.1);border-left:3px solid var(--neon-g);color:var(--neon-g);}
+  .feedback-msg.err{display:block;background:rgba(255,68,102,.1);border-left:3px solid var(--neon-r);color:var(--neon-r);}
+  .score-flash{display:inline-block;font-family:'Press Start 2P',monospace;font-size:9px;padding:3px 8px;border-radius:4px;background:rgba(255,230,0,.2);color:var(--neon-y);animation:flashIn .4s ease;margin-left:8px;}
+  @keyframes flashIn{from{opacity:0;transform:scale(1.5)}to{opacity:1;transform:scale(1)}}
+  #s1-score-display{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--neon-y);margin-bottom:14px;}
+
+  /* Progress */
+  .progress-wrap{background:#111;border:1px solid var(--border);border-radius:4px;height:8px;overflow:hidden;margin-bottom:16px;}
+  .progress-bar{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--neon-g),var(--neon-b));transition:width .5s ease;}
+
+  /* Textarea */
+  .q-textarea{width:100%;background:#0d0d1f;border:2px solid var(--border);border-radius:8px;padding:12px 14px;color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:13px;line-height:1.7;resize:vertical;min-height:80px;transition:border-color .2s;}
+  .q-textarea:focus{outline:none;border-color:var(--neon-b);box-shadow:0 0 8px rgba(68,170,255,.25);}
+  .q-textarea::placeholder{color:var(--dim);}
+  .char-counter{text-align:right;font-size:11px;color:var(--dim);margin-top:4px;}
+  .char-counter.ready{color:var(--neon-g);}
+
+  /* Agree */
+  .agree-row{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+  .agree-opt{font-family:'Press Start 2P',monospace;font-size:8px;padding:9px 16px;border-radius:8px;border:2px solid var(--border);background:rgba(255,255,255,.02);color:var(--dim);cursor:pointer;transition:all .2s;}
+  .agree-opt.sel-yes{color:var(--neon-g);border-color:var(--neon-g);background:rgba(0,255,170,.1);}
+  .agree-opt.sel-no{color:var(--neon-r);border-color:var(--neon-r);background:rgba(255,68,102,.1);}
+
+  /* Partner */
+  .partner-prompt{background:rgba(68,170,255,.07);border:2px solid rgba(68,170,255,.35);border-radius:10px;padding:16px 18px;margin-bottom:20px;}
+  .partner-prompt p{font-size:14px;line-height:1.8;font-weight:700;}
+  .partner-prompt .tip{font-size:11px;color:var(--dim);margin-top:8px;}
+  .pair-section{border:2px solid rgba(68,170,255,.3);border-radius:10px;padding:18px;margin-bottom:18px;background:rgba(68,170,255,.04);}
+  .pair-role{font-size:11px;font-weight:900;letter-spacing:2px;margin-bottom:10px;color:var(--neon-b);}
+
+  /* Buttons */
+  .btn{font-family:'Press Start 2P',monospace;font-size:9px;padding:12px 22px;border-radius:8px;border:2px solid;cursor:pointer;transition:all .2s;letter-spacing:1px;display:inline-block;}
+  .btn:hover{transform:translateY(-2px);filter:brightness(1.2);}
+  .btn:active{transform:translateY(0);}
+  .btn-yellow{background:rgba(255,230,0,.1);color:var(--neon-y);border-color:var(--neon-y);}
+  .btn-green{background:rgba(0,255,170,.1);color:var(--neon-g);border-color:var(--neon-g);}
+  .btn-purple{background:rgba(204,68,255,.1);color:var(--neon-p);border-color:var(--neon-p);}
+  .btn-blue{background:rgba(68,170,255,.1);color:var(--neon-b);border-color:var(--neon-b);}
+  .btn-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px;}
+  .pixel-div{border:none;border-top:2px dashed var(--border);margin:22px 0;}
+
+  /* Result */
+  #result-screen{display:none;text-align:center;padding:24px 0;}
+  .result-title{font-family:'Press Start 2P',monospace;font-size:13px;color:var(--neon-y);text-shadow:0 0 18px var(--neon-y);margin-bottom:18px;line-height:2;}
+  .result-score{font-family:'Press Start 2P',monospace;font-size:26px;color:var(--neon-g);text-shadow:0 0 20px var(--neon-g);margin-bottom:6px;}
+  .result-grade{font-size:15px;color:var(--dim);margin-bottom:28px;}
+  .result-summary{background:var(--panel);border:2px solid var(--border);border-radius:10px;padding:20px 24px;text-align:left;margin-bottom:20px;}
+  .result-summary h3{font-size:12px;color:var(--neon-p);margin-bottom:14px;font-weight:900;}
+  .result-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1a1a30;font-size:12px;}
+  .result-row:last-child{border-bottom:none;}
+
+  /* Send Panel */
+  #send-panel{background:var(--panel);border:2px solid var(--neon-b);border-radius:12px;padding:24px;margin-bottom:20px;text-align:left;}
+  #send-panel h3{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--neon-b);margin-bottom:14px;line-height:1.8;}
+  .send-status{font-size:12px;padding:12px 16px;border-radius:8px;margin-top:14px;display:none;line-height:1.8;}
+  .send-status.success{display:block;background:rgba(0,255,170,.1);border:1px solid var(--neon-g);color:var(--neon-g);}
+  .send-status.error{display:block;background:rgba(255,68,102,.1);border:1px solid var(--neon-r);color:var(--neon-r);}
+  .send-status.loading{display:block;background:rgba(68,170,255,.1);border:1px solid var(--neon-b);color:var(--neon-b);}
+  .copy-box{background:#0d0d1f;border:1px solid var(--border);border-radius:8px;padding:14px;font-size:11px;line-height:1.9;color:var(--dim);max-height:220px;overflow-y:auto;margin-top:14px;white-space:pre-wrap;word-break:break-all;display:none;}
+
+  /* GAS guide box */
+  .gas-guide{background:rgba(255,230,0,.04);border:1px solid rgba(255,230,0,.25);border-radius:8px;padding:14px 16px;font-size:11px;color:var(--dim);line-height:1.9;margin-bottom:16px;}
+  .gas-guide strong{color:var(--neon-y);}
+  .gas-guide code{font-family:monospace;background:#0d0d1f;padding:1px 5px;border-radius:3px;color:var(--text);font-size:10px;}
+
+  /* Confetti */
+  .confetti-container{position:fixed;inset:0;pointer-events:none;z-index:100;}
+  .conf{position:absolute;top:-10px;width:8px;height:8px;border-radius:2px;animation:fall linear forwards;}
+  @keyframes fall{to{transform:translateY(105vh) rotate(720deg);opacity:0;}}
+
+  /* Toast */
+  #toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1a1a30;border:2px solid var(--neon-g);color:var(--neon-g);border-radius:8px;padding:10px 22px;font-family:'Press Start 2P',monospace;font-size:9px;pointer-events:none;opacity:0;transition:opacity .3s;z-index:10000;white-space:nowrap;}
+  #toast.show{opacity:1;}
+
+  @media(max-width:600px){
+    .game-logo{font-size:8px;}
+    .game-panel{padding:18px 14px;}
+    .stage-connector{width:20px;}
+    .stage-dot{width:36px;height:36px;font-size:8px;}
+    #hud{flex-direction:column;align-items:flex-start;}
+  }
+</style>
+</head>
+<body>
+<div class="stars"></div>
+<div id="toast"></div>
+<div class="confetti-container" id="confetti"></div>
+<div id="app">
+
+<!-- ══ TITLE ══ -->
+<div id="title-screen">
+  <div style="font-size:38px;margin-bottom:12px;">🕹️</div>
+  <div class="game-logo">길모퉁이에서<br>만난 사람</div>
+  <div class="game-sub">HAVRUTA ARCADE · 양귀자</div>
+  <div class="stage-preview">
+    <span class="sbp">🟡 STAGE 1 내용확인</span>
+    <span class="sbp">🟢 STAGE 2 심층탐구</span>
+    <span class="sbp">🟣 STAGE 3 가치판단</span>
+    <span class="sbp">🔵 STAGE 4 짝과대화</span>
+  </div>
+  <div class="name-row">
+    <input class="name-input" id="in-name" placeholder="이름" maxlength="10">
+    <input class="name-input" id="in-class" placeholder="학년-반-번호 (예: 2-3-07)" maxlength="14" style="width:230px;">
+  </div>
+  <button class="btn-start" onclick="startGame()">▶ START GAME</button>
+  <div style="font-family:'Press Start 2P',monospace;font-size:7px;color:var(--dim);margin-top:14px;" class="blink">INSERT COIN</div>
+</div>
+
+<!-- ══ HUD ══ -->
+<div id="hud">
+  <div class="hud-item"><div class="hud-label">SCORE</div><div class="hud-val" id="hud-score">0000</div></div>
+  <div class="hud-item" style="text-align:center;"><div class="hud-label">PLAYER</div><div class="hud-name" id="hud-name">-</div></div>
+  <div class="hud-item" style="text-align:center;"><div class="hud-label">STAGE</div><div class="hud-val" id="hud-stage">1/4</div></div>
+  <div class="hud-item" style="text-align:right;"><div class="hud-label">LIVES</div><div class="hearts" id="hud-hearts"><span class="heart-full">♥</span><span class="heart-full">♥</span><span class="heart-full">♥</span></div></div>
+</div>
+
+<!-- ══ STAGE MAP ══ -->
+<div id="stage-map" style="display:none;">
+  <div class="stage-node"><div class="stage-dot locked" id="dot-1">1</div><div class="stage-label" id="label-1">내용<br>확인</div></div>
+  <div class="stage-connector" id="conn-1"></div>
+  <div class="stage-node"><div class="stage-dot locked" id="dot-2">2</div><div class="stage-label" id="label-2">심층<br>탐구</div></div>
+  <div class="stage-connector" id="conn-2"></div>
+  <div class="stage-node"><div class="stage-dot locked" id="dot-3">3</div><div class="stage-label" id="label-3">가치<br>판단</div></div>
+  <div class="stage-connector" id="conn-3"></div>
+  <div class="stage-node"><div class="stage-dot locked" id="dot-4">4</div><div class="stage-label" id="label-4">짝과<br>대화</div></div>
+</div>
+
+<!-- ══ STAGE 1 ══ -->
+<div class="game-panel" id="panel-1">
+  <div class="stage-header">
+    <div class="stage-badge badge-s1">STAGE 1</div>
+    <div><div class="stage-title">🟡 내용 확인 질문</div><div class="stage-desc">소설 내용을 정확히 이해했는지 확인하는 단계입니다.</div></div>
+  </div>
+  <div class="stage-instruction">
+    <strong>📌 게임 규칙</strong>: 보기 중 가장 알맞은 답을 고르세요.<br>
+    정답 <span style="color:var(--neon-g)">+200점</span> · 오답 <span style="color:var(--neon-r)">하트 -1 (정답이 표시됩니다)</span><br>
+    <strong>5문제를 모두 답하면</strong> (정오 관계없이) STAGE 2로 진행됩니다.
+  </div>
+  <div id="s1-score-display">문제 풀이: <span id="s1-done">0</span> / 5 &nbsp;|&nbsp; 정답: <span id="s1-correct">0</span>개</div>
+  <div class="progress-wrap"><div class="progress-bar" id="s1-progress" style="width:0%"></div></div>
+
+  <div class="q-block">
+    <div class="q-num">Q.01</div>
+    <div class="q-text">글쓴이의 동네 앞 큰길을 <span class="q-hl">'카페 거리'</span>라고 부르는 이유는 무엇인가요?</div>
+    <div class="mcq-options">
+      <button class="mcq-btn" onclick="checkMCQ(this,'s1q1',false,'①')"><span class="mcq-key">①</span>유명한 대형 카페 한 곳이 동네의 랜드마크여서</button>
+      <button class="mcq-btn" onclick="checkMCQ(this,'s1q1',true,'②')"><span class="mcq-key">②</span>길 양쪽에 수십 개의 작고 아담한 카페들이 늘어서 있어서</button>
+      <button class="mcq-btn" onclick="checkMCQ(this,'s1q1',false,'③')"><span class="mcq-key">③</span>카페에서 예술 전시회를 매일 열기 때문에</button>
+      <button class="mcq-btn" onclick="checkMCQ(this,'s1q1',false,'④')"><span class="mcq-key">④</span>카페 주인들이 모두 유명한 화가여서</button>
+    </div>
+    <div class="feedback-msg" id="fb-s1q1"></div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-num">Q.02</div>
+    <div class="q-text">김밥 아줌마가 김밥을 만들 때 가장 <span class="q-hl">싫어하는 것</span>은 무엇인가요?</div>
+    <div class="mcq-options">
+      <button class="mcq-btn" onclick="checkMCQ(this,'s1q2',false,'①')"><span class="mcq-key">①</span>손님이 가격을 깎으려고 할 때</button>
+      <button class="mcq-btn" onclick="checkMCQ(this,'s1q2',false,'②')"><span class="mcq-key">②</span>재료가 부족하거나 신선하지 않을 때</button>
+      <button class="mcq-btn" onclick="checkMCQ(this,'s1q2',true,'③')"><span class="mcq-key">③</span>누군가 김밥 마는 과정을 쳐다볼 때</button>
+      <button class="mcq-btn" onclick="checkMCQ(this,'s1q2',false,'④')"><span class="mcq-key">④</span>주문이 너무 많이 들어와 바쁠 때</button>
+    </div>
+    <div class="feedback-msg" id="fb-s1q2"></div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-num">Q.03</div>
+    <div class="q-text">주홍 트럭 아저씨는 하루에 <span class="q-hl">몇 번, 언제</span> 연립 주택 마당에 나타나나요?</div>
+    <div class="mcq-options">
+      <button class="mcq-btn" onclick="checkMCQ(this,'s1q3',false,'①')"><span class="mcq-key">①</span>하루 1번 – 오전 10시</button>
+      <button class="mcq-btn" onclick="checkMCQ(this,'s1q3',true,'②')"><span class="mcq-key">②</span>하루 2번 – 오전 10시 무렵 & 오후 4시경</button>
+      <button class="mcq-btn" onclick="checkMCQ(this,'s1q3',false,'③')"><span class="mcq-key">③</span>하루 3번 – 오전·오후·저녁</button>
+      <button class="mcq-btn" onclick="checkMCQ(this,'s1q3',false,'④')"><span class="mcq-key">④</span>하루 2번 – 오전 9시 & 오후 6시</button>
+    </div>
+    <div class="feedback-msg" id="fb-s1q3"></div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-num">Q.04</div>
+    <div class="q-text">김대호 씨의 키는 몇 cm로 소개되어 있나요?</div>
+    <div class="mcq-options">
+      <button class="mcq-btn" onclick="checkMCQ(this,'s1q4',false,'①')"><span class="mcq-key">①</span>178 cm</button>
+      <button class="mcq-btn" onclick="checkMCQ(this,'s1q4',false,'②')"><span class="mcq-key">②</span>180 cm</button>
+      <button class="mcq-btn" onclick="checkMCQ(this,'s1q4',false,'③')"><span class="mcq-key">③</span>183 cm</button>
+      <button class="mcq-btn" onclick="checkMCQ(this,'s1q4',true,'④')"><span class="mcq-key">④</span>186 cm</button>
+    </div>
+    <div class="feedback-msg" id="fb-s1q4"></div>
+  </div>
+
+  <div class="q-block">
+    <div class="q-num">Q.05</div>
+    <div class="q-text">김대호 씨의 별명 <span class="q-hl">'긴데요'</span>가 생긴 직접적인 이유는 무엇인가요?</div>
+    <div class="mcq-options">
+      <button class="mcq-btn" onclick="checkMCQ(this,'s1q5',false,'①')"><span class="mcq-key">①</span>키가 크다고 자랑하는 이야기를 항상 길게 해서</button>
+      <button class="mcq-btn" onclick="checkMCQ(this,'s1q5',true,'②')"><span class="mcq-key">②</span>전화를 받을 때 "제가 긴데요"라고 느릿하게 말해서</button>
+      <button class="mcq-btn" onclick="checkMCQ(this,'s1q5',false,'③')"><span class="mcq-key">③</span>회의 시간마다 이야기를 길게 이어가서</button>
+      <button class="mcq-btn" onclick="checkMCQ(this,'s1q5',false,'④')"><span class="mcq-key">④</span>다리가 길어서 걸음이 느리다고 늘 핑계 대서</button>
+    </div>
+    <div class="feedback-msg" id="fb-s1q5"></div>
+  </div>
+
+  <div id="s1-next" style="display:none;">
+    <hr class="pixel-div">
+    <div style="text-align:center;">
+      <div style="font-family:'Press Start 2P',monospace;font-size:9px;color:var(--neon-g);margin-bottom:16px;">✓ STAGE 1 CLEAR!</div>
+      <button class="btn btn-green" onclick="goStage(2)">NEXT STAGE ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ STAGE 2 ══ -->
+<div class="game-panel" id="panel-2">
+  <div class="stage-header">
+    <div class="stage-badge badge-s2">STAGE 2</div>
+    <div><div class="stage-title">🟢 심층 탐구 질문</div><div class="stage-desc">글에 숨겨진 의미와 작가의 의도를 파고드는 단계입니다.</div></div>
+  </div>
+  <div class="stage-instruction">
+    <strong>📌 게임 규칙</strong>: 각 질문에 생각을 담아 서술하세요.<br>
+    3문항 모두 완료 시 <span style="color:var(--neon-g)">각 +300점</span> · 최소 <strong style="color:var(--text)">30자 이상</strong>
+  </div>
+
+  <div class="q-block">
+    <div class="q-num">Q.01</div>
+    <div class="q-text">글쓴이가 김밥 아줌마를 <span class="q-hl">'예술가'</span>라고 부르는 이유를 소설 속 근거를 들어 두 가지 이상 설명하세요.</div>
+    <textarea class="q-textarea" id="s2q1" placeholder="소설 내용을 바탕으로 구체적으로 써보세요..." oninput="countChars('s2q1','cc-s2q1',30)"></textarea>
+    <div class="char-counter" id="cc-s2q1">0 / 30자 이상</div>
+  </div>
+  <div class="q-block">
+    <div class="q-num">Q.02</div>
+    <div class="q-text">빵떡모자 아저씨가 <span class="q-hl">"이보다 더 좋은 마늘 파는 사람 있으면 어디 나와 보라"</span>고 말하는 장면에서 드러나는 그의 성격과 '예술가'적 면모를 연결하여 설명하세요.</div>
+    <textarea class="q-textarea" id="s2q2" placeholder="성격, 태도, 장인 정신과 연결지어 써보세요..." oninput="countChars('s2q2','cc-s2q2',30)"></textarea>
+    <div class="char-counter" id="cc-s2q2">0 / 30자 이상</div>
+  </div>
+  <div class="q-block">
+    <div class="q-num">Q.03</div>
+    <div class="q-text">글쓴이가 본격적인 이야기 전에 <span class="q-hl">동네의 예술적 분위기</span>를 길게 설명한 서두는 글 전체에서 어떤 역할을 하나요?</div>
+    <textarea class="q-textarea" id="s2q3" placeholder="서두의 기능과 효과에 대해 생각해보세요..." oninput="countChars('s2q3','cc-s2q3',30)"></textarea>
+    <div class="char-counter" id="cc-s2q3">0 / 30자 이상</div>
+  </div>
+
+  <div class="btn-row"><button class="btn btn-green" onclick="submitStage2()">✔ 제출하고 점수 받기</button></div>
+  <div id="s2-next" style="display:none;">
+    <hr class="pixel-div">
+    <div style="text-align:center;">
+      <div style="font-family:'Press Start 2P',monospace;font-size:9px;color:var(--neon-g);margin-bottom:16px;">✓ STAGE 2 CLEAR!</div>
+      <button class="btn btn-purple" onclick="goStage(3)">NEXT STAGE ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ STAGE 3 ══ -->
+<div class="game-panel" id="panel-3">
+  <div class="stage-header">
+    <div class="stage-badge badge-s3">STAGE 3</div>
+    <div><div class="stage-title">🟣 가치 판단 및 적용</div><div class="stage-desc">나의 삶과 연결하여 가치를 판단하고 적용하는 단계입니다.</div></div>
+  </div>
+  <div class="stage-instruction">
+    <strong>📌 게임 규칙</strong>: 정답이 없습니다. 솔직하게 써보세요.<br>
+    3문항 모두 완료 시 <span style="color:var(--neon-p)">각 +400점</span> · 최소 <strong style="color:var(--text)">40자 이상</strong>
+  </div>
+
+  <div class="q-block">
+    <div class="q-num">Q.01</div>
+    <div class="q-text">세 인물 <span class="q-hl">김밥 아줌마 / 빵떡모자 아저씨 / 김대호 씨</span> 중 나와 가장 닮고 싶은 사람은 누구인가요? 자신의 경험과 연결지어 쓰세요.</div>
+    <textarea class="q-textarea" id="s3q1" placeholder="인물을 선택하고 이유를 구체적으로 써보세요..." oninput="countChars('s3q1','cc-s3q1',40)" style="min-height:90px;"></textarea>
+    <div class="char-counter" id="cc-s3q1">0 / 40자 이상</div>
+  </div>
+  <div class="q-block">
+    <div class="q-num">Q.02</div>
+    <div class="q-text"><span class="q-hl">"요즘처럼 정신없이 핑핑 돌아가는 세상에서 김대호 씨 같은 사람이 있는 것도 행복한 일"</span> — 이 말에 동의하나요? 자신의 근거를 들어 쓰세요.</div>
+    <div class="agree-row">
+      <button class="agree-opt" id="agree-yes" onclick="selectAgree(true)">✓ 동의한다</button>
+      <button class="agree-opt" id="agree-no"  onclick="selectAgree(false)">✗ 동의하지 않는다</button>
+    </div>
+    <textarea class="q-textarea" id="s3q2" placeholder="입장을 선택한 뒤 이유를 써보세요..." oninput="countChars('s3q2','cc-s3q2',40)" style="min-height:90px;"></textarea>
+    <div class="char-counter" id="cc-s3q2">0 / 40자 이상</div>
+  </div>
+  <div class="q-block">
+    <div class="q-num">Q.03</div>
+    <div class="q-text">내 주변에서 이 글의 기준으로 <span class="q-hl">'예술가'</span>라 부를 수 있는 사람이 있다면 누구인지, 이유와 함께 쓰세요.</div>
+    <textarea class="q-textarea" id="s3q3" placeholder="가족, 친구, 선생님, 동네 사람 누구든 좋습니다..." oninput="countChars('s3q3','cc-s3q3',40)" style="min-height:90px;"></textarea>
+    <div class="char-counter" id="cc-s3q3">0 / 40자 이상</div>
+  </div>
+
+  <div class="btn-row"><button class="btn btn-purple" onclick="submitStage3()">✔ 제출하고 점수 받기</button></div>
+  <div id="s3-next" style="display:none;">
+    <hr class="pixel-div">
+    <div style="text-align:center;">
+      <div style="font-family:'Press Start 2P',monospace;font-size:9px;color:var(--neon-p);margin-bottom:16px;">✓ STAGE 3 CLEAR!</div>
+      <button class="btn btn-blue" onclick="goStage(4)">FINAL STAGE ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ STAGE 4 ══ -->
+<div class="game-panel" id="panel-4">
+  <div class="stage-header">
+    <div class="stage-badge badge-s4">STAGE 4</div>
+    <div><div class="stage-title">🔵 짝과 대화하고 정리하기</div><div class="stage-desc">하브루타의 핵심! 짝과 생각을 나누고 기록하세요.</div></div>
+  </div>
+  <div class="stage-instruction">
+    <strong>📌 게임 규칙</strong>: 두 주제를 짝과 이야기하고, <strong style="color:var(--text)">짝이 말한 것</strong>을 정리해 쓰세요.<br>
+    각 주제 완료 시 <span style="color:var(--neon-b)">+500점</span> · 40자 이상
+  </div>
+
+  <div class="q-block">
+    <div class="q-num" style="color:var(--neon-b);">TOPIC 01</div>
+    <div class="partner-prompt">
+      <div style="font-size:22px;margin-bottom:6px;">💬</div>
+      <p>글쓴이는 김밥 아줌마와 야채 장수를 <strong>'예술가'</strong>라고 부릅니다.<br>평범한 사람을 '예술가'라고 부를 수 있는 <strong>기준</strong>은 무엇일까요?</p>
+      <div class="tip">💡 각자 1분 생각 → 서로 의견 교환 → 짝의 내용 정리</div>
+    </div>
+    <div class="pair-section">
+      <div class="pair-role">👤 나의 생각 (메모용)</div>
+      <textarea class="q-textarea" id="s4t1-me" placeholder="내 생각을 간단히 메모하세요..." style="min-height:65px;"></textarea>
+    </div>
+    <div class="pair-section">
+      <div class="pair-role" style="color:var(--neon-y);">👥 짝이 말한 것 정리 ★ (제출용)</div>
+      <textarea class="q-textarea" id="s4t1-partner" placeholder="짝의 핵심 생각을 정리해 쓰세요..." style="min-height:85px;" oninput="countChars('s4t1-partner','cc-s4t1',40)"></textarea>
+      <div class="char-counter" id="cc-s4t1">0 / 40자 이상</div>
+    </div>
+  </div>
+
+  <hr class="pixel-div">
+
+  <div class="q-block">
+    <div class="q-num" style="color:var(--neon-b);">TOPIC 02</div>
+    <div class="partner-prompt">
+      <div style="font-size:22px;margin-bottom:6px;">💬</div>
+      <p>김대호 씨는 결국 <strong>'긴데요'</strong>를 고치지 않았습니다.<br><strong>개성을 지키는 것</strong> vs <strong>사회에 맞추는 것</strong>, 어느 쪽이 더 중요할까요?</p>
+      <div class="tip">💡 상대방의 근거를 끝까지 들은 뒤 비교해보세요.</div>
+    </div>
+    <div class="pair-section">
+      <div class="pair-role">👤 나의 생각 (메모용)</div>
+      <textarea class="q-textarea" id="s4t2-me" placeholder="내 입장과 이유를 메모하세요..." style="min-height:65px;"></textarea>
+    </div>
+    <div class="pair-section">
+      <div class="pair-role" style="color:var(--neon-y);">👥 짝이 말한 것 정리 ★ (제출용)</div>
+      <textarea class="q-textarea" id="s4t2-partner" placeholder="짝이 선택한 입장과 이유를 정리해 쓰세요..." style="min-height:85px;" oninput="countChars('s4t2-partner','cc-s4t2',40)"></textarea>
+      <div class="char-counter" id="cc-s4t2">0 / 40자 이상</div>
+    </div>
+  </div>
+
+  <div class="btn-row"><button class="btn btn-blue" onclick="submitStage4()">✔ 대화 정리 완료 → 결과 보기</button></div>
+</div>
+
+<!-- ══ RESULT ══ -->
+<div id="result-screen">
+  <div class="result-title">GAME CLEAR! 🎉</div>
+  <div class="result-score" id="final-score">00000점</div>
+  <div class="result-grade" id="final-grade"></div>
+
+  <div class="result-summary">
+    <h3>📊 STAGE REPORT</h3>
+    <div class="result-row"><span>🟡 STAGE 1 내용 확인</span><span id="r-s1" style="color:var(--neon-y);">+0</span></div>
+    <div class="result-row"><span>🟢 STAGE 2 심층 탐구</span><span id="r-s2" style="color:var(--neon-g);">+0</span></div>
+    <div class="result-row"><span>🟣 STAGE 3 가치 판단</span><span id="r-s3" style="color:var(--neon-p);">+0</span></div>
+    <div class="result-row"><span>🔵 STAGE 4 짝과 대화</span><span id="r-s4" style="color:var(--neon-b);">+0</span></div>
+    <div class="result-row" style="margin-top:8px;padding-top:14px;border-top:2px solid var(--border);">
+      <span style="font-weight:900;">TOTAL SCORE</span>
+      <span id="r-total" style="color:var(--neon-y);font-weight:900;">0점</span>
+    </div>
+  </div>
+
+  <!-- 교사 전송 패널 -->
+  <div id="send-panel">
+    <h3>📤 결과를 선생님께 전송</h3>
+    <div class="gas-guide">
+      <strong>📌 선생님용 Google Sheets 연동 방법</strong><br>
+      1. Google 스프레드시트 새로 만들기<br>
+      2. <strong>확장 프로그램 → Apps Script</strong> 열기<br>
+      3. 아래 코드 붙여넣고 저장:<br>
+      <code>function doPost(e){const s=SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();const d=JSON.parse(e.postData.contents);s.appendRow([new Date(),d.name,d.classInfo,d.score,d.s1_score,d.s1_details,d.s2q1,d.s2q2,d.s2q3,d.s3q1,d.s3q2_agree,d.s3q2,d.s3q3,d.s4t1_partner,d.s4t2_partner]);return ContentService.createTextOutput(JSON.stringify({result:'ok'})).setMimeType(ContentService.MimeType.JSON);}</code><br>
+      4. <strong>배포 → 새 배포 → 웹앱</strong> (액세스: 모든 사용자)<br>
+      5. 배포 URL을 아래 입력창에 붙여넣기
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;color:var(--dim);margin-bottom:6px;">Google Apps Script 웹앱 URL (선생님이 설정)</div>
+      <input id="gas-url-input" style="width:100%;background:#0d0d1f;border:2px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:monospace;font-size:11px;" placeholder="https://script.google.com/macros/s/..." oninput="saveGasUrl()">
+    </div>
+
+    <div class="btn-row" style="justify-content:center;flex-wrap:wrap;">
+      <button class="btn btn-blue" onclick="sendToTeacher()">📡 선생님께 전송</button>
+      <button class="btn btn-yellow" onclick="copyResults()">📋 결과 텍스트 복사</button>
+    </div>
+
+    <div class="send-status" id="send-status"></div>
+    <div class="copy-box" id="copy-box"></div>
+  </div>
+
+  <div style="text-align:center;margin-top:8px;">
+    <button class="btn btn-yellow" onclick="location.reload()">▶ PLAY AGAIN</button>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+// ─────────────────────────────────────────
+// State
+// ─────────────────────────────────────────
+let score=0, lives=3, stage=1;
+let stageScores=[0,0,0,0];
+// ★ 핵심 수정: 정오와 무관하게 "답한" 문항을 Set으로 추적
+let s1DoneSet=new Set();
+let s1CorrectCount=0;
+const s1Results={s1q1:'-',s1q2:'-',s1q3:'-',s1q4:'-',s1q5:'-'};
+let agreeSelected=null;
+let playerName='', playerClass='';
+
+// GAS URL을 로컬스토리지에 유지 (교사가 한 번만 입력하면 됨)
+window.addEventListener('DOMContentLoaded',()=>{
+  const saved=localStorage.getItem('gas_url')||'';
+  document.getElementById('gas-url-input').value=saved;
+});
+function saveGasUrl(){
+  localStorage.setItem('gas_url',document.getElementById('gas-url-input').value.trim());
+}
+
+// ─────────────────────────────────────────
+function startGame(){
+  playerName=document.getElementById('in-name').value.trim()||'학생';
+  playerClass=document.getElementById('in-class').value.trim()||'-';
+  document.getElementById('title-screen').style.display='none';
+  document.getElementById('hud').style.display='flex';
+  document.getElementById('stage-map').style.display='flex';
+  document.getElementById('hud-name').textContent=playerName;
+  goStage(1);
+}
+
+function updateHUD(){
+  document.getElementById('hud-score').textContent=String(score).padStart(4,'0');
+  document.getElementById('hud-stage').textContent=stage+'/4';
+  let h='';
+  for(let i=0;i<3;i++) h+=i<lives?'<span class="heart-full">♥</span>':'<span class="heart-empty">♡</span>';
+  document.getElementById('hud-hearts').innerHTML=h;
+}
+
+function goStage(n){
+  stage=n;
+  [1,2,3,4].forEach(i=>{
+    document.getElementById('panel-'+i).classList.remove('active');
+    document.getElementById('dot-'+i).classList.remove('active');
+  });
+  document.getElementById('panel-'+n).classList.add('active');
+  let dot=document.getElementById('dot-'+n);
+  dot.classList.remove('locked');
+  dot.classList.add('active');
+  document.getElementById('label-'+n).classList.add('active-label');
+  for(let i=1;i<n;i++){
+    document.getElementById('dot-'+i).classList.remove('active');
+    document.getElementById('dot-'+i).classList.add('done');
+    let c=document.getElementById('conn-'+i);
+    if(c) c.classList.add('lit');
+  }
+  updateHUD();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ─────────────────────────────────────────
+// STAGE 1 MCQ  ★ 버그 수정
+// ─────────────────────────────────────────
+function checkMCQ(btn, qid, correct, choice){
+  // 이미 이 문항에 답했으면 무시 (중복 클릭 방지)
+  if(s1DoneSet.has(qid)) return;
+
+  // 해당 문항의 모든 버튼 비활성화
+  const btns=btn.parentElement.querySelectorAll('.mcq-btn');
+  btns.forEach(b=>b.disabled=true);
+
+  const fb=document.getElementById('fb-'+qid);
+
+  if(correct){
+    btn.classList.add('correct');
+    score+=200;
+    stageScores[0]+=200;
+    s1CorrectCount++;
+    s1Results[qid]='정답('+choice+')';
+    fb.className='feedback-msg ok';
+    fb.innerHTML='⭐ 정답입니다! <span class="score-flash">+200점</span>';
+  } else {
+    btn.classList.add('wrong');
+    lives=Math.max(0,lives-1);
+    s1Results[qid]='오답('+choice+' 선택)';
+    fb.className='feedback-msg err';
+    fb.textContent='✗ 아쉽습니다! 하트가 하나 줄었어요.';
+    // 정답 버튼도 초록색으로 표시
+    btns.forEach(b=>{
+      if(b.getAttribute('onclick').includes(',true,'))
+        b.classList.add('correct');
+    });
+  }
+
+  // ★ 정답/오답 관계없이 이 문항을 "완료"로 표시
+  s1DoneSet.add(qid);
+  updateHUD();
+
+  const doneCount=s1DoneSet.size;
+  document.getElementById('s1-progress').style.width=(doneCount/5*100)+'%';
+  document.getElementById('s1-done').textContent=doneCount;
+  document.getElementById('s1-correct').textContent=s1CorrectCount;
+
+  // ★ 5문제를 모두 답했을 때 (정오 무관) 다음 버튼 표시
+  if(doneCount===5){
+    setTimeout(()=>{
+      document.getElementById('s1-next').style.display='block';
+      showToast('STAGE 1 CLEAR! ★');
+      document.getElementById('s1-next').scrollIntoView({behavior:'smooth',block:'center'});
+    },600);
+  }
+  if(lives===0) showToast('하트를 모두 잃었습니다 😢');
+}
+
+// ─────────────────────────────────────────
+// Stage 2
+// ─────────────────────────────────────────
+function countChars(id,ccId,min){
+  const len=document.getElementById(id).value.replace(/\s/g,'').length;
+  const cc=document.getElementById(ccId);
+  if(min===0){cc.textContent=len+'자';return;}
+  cc.textContent=len+' / '+min+'자 이상';
+  len>=min?cc.classList.add('ready'):cc.classList.remove('ready');
+}
+
+function submitStage2(){
+  const lens=['s2q1','s2q2','s2q3'].map(id=>document.getElementById(id).value.replace(/\s/g,'').length);
+  if(lens.some(l=>l<30)){showToast('모든 질문에 30자 이상 써주세요!');return;}
+  score+=900; stageScores[1]+=900;
+  updateHUD();
+  document.getElementById('s2-next').style.display='block';
+  showToast('STAGE 2 CLEAR! ★★');
+  document.getElementById('s2-next').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+// ─────────────────────────────────────────
+// Stage 3
+// ─────────────────────────────────────────
+function selectAgree(val){
+  agreeSelected=val;
+  document.getElementById('agree-yes').className='agree-opt'+(val?' sel-yes':'');
+  document.getElementById('agree-no').className='agree-opt'+(!val?' sel-no':'');
+}
+
+function submitStage3(){
+  const lens=['s3q1','s3q2','s3q3'].map(id=>document.getElementById(id).value.replace(/\s/g,'').length);
+  if(lens.some(l=>l<40)){showToast('모든 질문에 40자 이상 써주세요!');return;}
+  if(agreeSelected===null){showToast('Q.02에서 입장을 선택해주세요!');return;}
+  score+=1200; stageScores[2]+=1200;
+  updateHUD();
+  document.getElementById('s3-next').style.display='block';
+  showToast('STAGE 3 CLEAR! ★★★');
+  document.getElementById('s3-next').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+// ─────────────────────────────────────────
+// Stage 4
+// ─────────────────────────────────────────
+function submitStage4(){
+  const t1=document.getElementById('s4t1-partner').value.replace(/\s/g,'').length;
+  const t2=document.getElementById('s4t2-partner').value.replace(/\s/g,'').length;
+  if(t1<40||t2<40){showToast('짝이 말한 것을 40자 이상 정리해주세요!');return;}
+  score+=1000; stageScores[3]+=1000;
+  updateHUD();
+  showResult();
+}
+
+// ─────────────────────────────────────────
+// Result
+// ─────────────────────────────────────────
+function showResult(){
+  [1,2,3,4].forEach(i=>{
+    document.getElementById('panel-'+i).classList.remove('active');
+    document.getElementById('dot-'+i).classList.remove('active');
+    document.getElementById('dot-'+i).classList.add('done');
+  });
+  [1,2,3].forEach(i=>{let c=document.getElementById('conn-'+i);if(c)c.classList.add('lit');});
+  document.getElementById('result-screen').style.display='block';
+  document.getElementById('final-score').textContent=String(score).padStart(5,'0')+'점';
+  document.getElementById('r-s1').textContent='+'+stageScores[0];
+  document.getElementById('r-s2').textContent='+'+stageScores[1];
+  document.getElementById('r-s3').textContent='+'+stageScores[2];
+  document.getElementById('r-s4').textContent='+'+stageScores[3];
+  document.getElementById('r-total').textContent=score+'점';
+  let grade='';
+  if(score>=3500) grade='🏆 S RANK – 탁월한 독자!';
+  else if(score>=2800) grade='🥇 A RANK – 훌륭해요!';
+  else if(score>=2000) grade='🥈 B RANK – 잘 했어요!';
+  else grade='🥉 C RANK – 다시 도전해봐요!';
+  document.getElementById('final-grade').textContent=grade;
+  launchConfetti();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ─────────────────────────────────────────
+// 데이터 수집
+// ─────────────────────────────────────────
+function collectData(){
+  const agreeLabel=agreeSelected===true?'동의':agreeSelected===false?'비동의':'미선택';
+  return {
+    name: playerName,
+    classInfo: playerClass,
+    submittedAt: new Date().toLocaleString('ko-KR'),
+    score: score,
+    // Stage 1
+    s1_score: stageScores[0],
+    s1_details: ['s1q1','s1q2','s1q3','s1q4','s1q5'].map(k=>k+': '+s1Results[k]).join(' | '),
+    // Stage 2
+    s2q1: document.getElementById('s2q1').value,
+    s2q2: document.getElementById('s2q2').value,
+    s2q3: document.getElementById('s2q3').value,
+    // Stage 3
+    s3q1: document.getElementById('s3q1').value,
+    s3q2_agree: agreeLabel,
+    s3q2: document.getElementById('s3q2').value,
+    s3q3: document.getElementById('s3q3').value,
+    // Stage 4
+    s4t1_partner: document.getElementById('s4t1-partner').value,
+    s4t2_partner: document.getElementById('s4t2-partner').value
+  };
+}
+
+// ─────────────────────────────────────────
+// 전송 (GAS 웹앱)
+// ─────────────────────────────────────────
+async function sendToTeacher(){
+  const url=document.getElementById('gas-url-input').value.trim();
+  const st=document.getElementById('send-status');
+  if(!url){
+    st.className='send-status error';
+    st.textContent='⚠ 웹앱 URL이 입력되지 않았습니다. 선생님께 URL을 받아 위 입력창에 붙여넣어 주세요. 또는 아래 "결과 텍스트 복사" 버튼을 사용하세요.';
+    return;
+  }
+  st.className='send-status loading';
+  st.textContent='⏳ 전송 중...';
+  try{
+    await fetch(url,{
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(collectData())
+    });
+    // no-cors 이므로 응답 내용을 읽을 수 없지만, 에러가 없으면 성공으로 처리
+    st.className='send-status success';
+    st.textContent='✅ 전송 완료! 선생님 스프레드시트에 결과가 기록되었습니다. 수고했어요! 🎉';
+  }catch(e){
+    st.className='send-status error';
+    st.textContent='❌ 전송 실패: '+e.message+'\n아래 "결과 텍스트 복사" 버튼으로 직접 전달해 주세요.';
+  }
+}
+
+// ─────────────────────────────────────────
+// 텍스트 복사
+// ─────────────────────────────────────────
+function copyResults(){
+  const d=collectData();
+  const txt=
+`════════════════════════════════
+📖 길모퉁이에서 만난 사람 – 하브루타 결과
+════════════════════════════════
+이름: ${d.name}    학번: ${d.classInfo}
+제출: ${d.submittedAt}
+총점: ${d.score}점
+
+[STAGE 1] 내용 확인 (${d.s1_score}점)
+${d.s1_details}
+
+[STAGE 2] 심층 탐구 (${stageScores[1]}점)
+Q1: ${d.s2q1}
+Q2: ${d.s2q2}
+Q3: ${d.s2q3}
+
+[STAGE 3] 가치 판단 (${stageScores[2]}점)
+Q1: ${d.s3q1}
+Q2 [${d.s3q2_agree}]: ${d.s3q2}
+Q3: ${d.s3q3}
+
+[STAGE 4] 짝과 대화 (${stageScores[3]}점)
+TOPIC1 – 짝 정리: ${d.s4t1_partner}
+TOPIC2 – 짝 정리: ${d.s4t2_partner}
+════════════════════════════════`;
+
+  const box=document.getElementById('copy-box');
+  box.textContent=txt;
+  box.style.display='block';
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(txt).then(()=>showToast('클립보드에 복사되었습니다!'));
+  }else{
+    const ta=document.createElement('textarea');
+    ta.value=txt; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('클립보드에 복사되었습니다!');
+  }
+}
+
+// ─────────────────────────────────────────
+// 유틸
+// ─────────────────────────────────────────
+let toastTimer=null;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+function launchConfetti(){
+  const cols=['#ffe600','#00ffaa','#cc44ff','#ff4466','#44aaff','#fff'];
+  const c=document.getElementById('confetti');
+  c.innerHTML='';
+  for(let i=0;i<90;i++){
+    const el=document.createElement('div');
+    el.className='conf';
+    el.style.left=Math.random()*100+'vw';
+    el.style.background=cols[Math.floor(Math.random()*cols.length)];
+    el.style.width=(6+Math.random()*8)+'px';
+    el.style.height=(6+Math.random()*8)+'px';
+    el.style.animationDuration=(1.5+Math.random()*2.5)+'s';
+    el.style.animationDelay=(Math.random()*1.2)+'s';
+    c.appendChild(el);
+  }
+  setTimeout(()=>c.innerHTML='',5000);
+}
+</script>
+</body>
+</html>
