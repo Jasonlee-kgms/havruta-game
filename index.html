@@ -493,7 +493,7 @@ let playerName='', playerClass='';
 
 // GAS URL을 로컬스토리지에 유지 (교사가 한 번만 입력하면 됨)
 window.addEventListener('DOMContentLoaded',()=>{
-  const saved=localStorage.getItem('gas_url')||'';
+  const saved=localStorage.getItem('gas_url')||'https://script.google.com/macros/s/여기에붙여넣기/exec';
   document.getElementById('gas-url-input').value=saved;
 });
 function saveGasUrl(){
