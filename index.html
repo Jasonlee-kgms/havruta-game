@@ -702,7 +702,8 @@ async function sendToTeacher(){
   try{
     await fetch(url,{
       method:'POST',
-      mode:'no-cors',
+      const params = new URLSearchParams({data: JSON.stringify(collectData())});
+await fetch(url + '?' + params.toString(), {mode:'no-cors'});
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(collectData())
     });
