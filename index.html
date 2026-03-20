@@ -145,6 +145,19 @@
   .gas-guide strong{color:var(--neon-y);}
   .gas-guide code{font-family:monospace;background:#0d0d1f;padding:1px 5px;border-radius:3px;color:var(--text);font-size:10px;}
 
+  /* AI Feedback */
+  .ai-feedback-wrap{margin-top:20px;border-radius:12px;overflow:hidden;border:2px solid rgba(204,68,255,.4);display:none;}
+  .ai-feedback-wrap.show{display:block;}
+  .ai-feedback-header{background:rgba(204,68,255,.15);padding:10px 16px;display:flex;align-items:center;gap:10px;}
+  .ai-feedback-header .ai-title{font-family:"Press Start 2P",monospace;font-size:8px;color:var(--neon-p);}
+  .ai-feedback-body{background:rgba(204,68,255,.05);padding:16px 18px;font-size:13px;line-height:1.9;color:var(--text);}
+  .ai-loading-box{padding:16px 18px;background:rgba(204,68,255,.05);font-size:12px;color:var(--neon-p);font-family:"Press Start 2P",monospace;text-align:center;display:none;}
+  .ai-loading-box.show{display:block;}
+  @keyframes dotFlash{0%,80%,100%{opacity:0}40%{opacity:1}}
+  .dot1{animation:dotFlash 1.4s infinite 0s;}
+  .dot2{animation:dotFlash 1.4s infinite .2s;}
+  .dot3{animation:dotFlash 1.4s infinite .4s;}
+
   /* Confetti */
   .confetti-container{position:fixed;inset:0;pointer-events:none;z-index:100;}
   .conf{position:absolute;top:-10px;width:8px;height:8px;border-radius:2px;animation:fall linear forwards;}
@@ -320,7 +333,20 @@
     <div class="char-counter" id="cc-s2q3">0 / 30자 이상</div>
   </div>
 
-  <div class="btn-row"><button class="btn btn-green" onclick="submitStage2()">✔ 제출하고 점수 받기</button></div>
+  <div class="btn-row"><button class="btn btn-green" id="s2-submit-btn" onclick="submitStage2()">✔ 제출하고 AI 피드백 받기</button></div>
+
+  <!-- AI 피드백 -->
+  <div class="ai-loading-box" id="s2-loading">
+    🤖 AI가 답변을 읽고 있습니다<span class="dot1">.</span><span class="dot2">.</span><span class="dot3">.</span>
+  </div>
+  <div class="ai-feedback-wrap" id="s2-feedback">
+    <div class="ai-feedback-header">
+      <span style="font-size:18px;">🤖</span>
+      <span class="ai-title">AI 선생님 피드백 · STAGE 2</span>
+    </div>
+    <div class="ai-feedback-body" id="s2-feedback-body"></div>
+  </div>
+
   <div id="s2-next" style="display:none;">
     <hr class="pixel-div">
     <div style="text-align:center;">
@@ -364,7 +390,20 @@
     <div class="char-counter" id="cc-s3q3">0 / 40자 이상</div>
   </div>
 
-  <div class="btn-row"><button class="btn btn-purple" onclick="submitStage3()">✔ 제출하고 점수 받기</button></div>
+  <div class="btn-row"><button class="btn btn-purple" id="s3-submit-btn" onclick="submitStage3()">✔ 제출하고 AI 피드백 받기</button></div>
+
+  <!-- AI 피드백 -->
+  <div class="ai-loading-box" id="s3-loading">
+    🤖 AI가 답변을 읽고 있습니다<span class="dot1">.</span><span class="dot2">.</span><span class="dot3">.</span>
+  </div>
+  <div class="ai-feedback-wrap" id="s3-feedback">
+    <div class="ai-feedback-header">
+      <span style="font-size:18px;">🤖</span>
+      <span class="ai-title">AI 선생님 피드백 · STAGE 3</span>
+    </div>
+    <div class="ai-feedback-body" id="s3-feedback-body"></div>
+  </div>
+
   <div id="s3-next" style="display:none;">
     <hr class="pixel-div">
     <div style="text-align:center;">
@@ -423,7 +462,19 @@
     </div>
   </div>
 
-  <div class="btn-row"><button class="btn btn-blue" onclick="submitStage4()">✔ 대화 정리 완료 → 결과 보기</button></div>
+  <div class="btn-row"><button class="btn btn-blue" id="s4-submit-btn" onclick="submitStage4()">✔ 대화 정리 완료 → AI 피드백 받기</button></div>
+
+  <!-- AI 피드백 -->
+  <div class="ai-loading-box" id="s4-loading">
+    🤖 AI가 답변을 읽고 있습니다<span class="dot1">.</span><span class="dot2">.</span><span class="dot3">.</span>
+  </div>
+  <div class="ai-feedback-wrap" id="s4-feedback">
+    <div class="ai-feedback-header">
+      <span style="font-size:18px;">🤖</span>
+      <span class="ai-title">AI 선생님 피드백 · STAGE 4</span>
+    </div>
+    <div class="ai-feedback-body" id="s4-feedback-body"></div>
+  </div>
 </div>
 
 <!-- ══ RESULT ══ -->
@@ -476,7 +527,7 @@ let agreeSelected=null;
 let playerName='', playerClass='';
 
 // ★ 선생님 GAS 웹앱 URL — 여기에 붙여넣으세요
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwxy7DMY3TQjcVNfepCBYFqqg6S37ooqpRW3jAqj6O3_4yQVHrgozXxKHOFOCvdXso2/exec';
+const GAS_URL = '';
 
 // ─────────────────────────────────────────
 function startGame(){
@@ -583,13 +634,28 @@ function countChars(id,ccId,min){
   len>=min?cc.classList.add('ready'):cc.classList.remove('ready');
 }
 
-function submitStage2(){
+async function submitStage2(){
   const lens=['s2q1','s2q2','s2q3'].map(id=>document.getElementById(id).value.replace(/\s/g,'').length);
   if(lens.some(l=>l<30)){showToast('모든 질문에 30자 이상 써주세요!');return;}
   score+=900; stageScores[1]+=900;
   updateHUD();
-  document.getElementById('s2-next').style.display='block';
+  document.getElementById('s2-submit-btn').disabled=true;
   showToast('STAGE 2 CLEAR! ★★');
+
+  // AI 피드백
+  const prompt=`너는 중학교 국어 교사야. 학생이 양귀자의 수필 '길모퉁이에서 만난 사람'을 읽고 아래 세 질문에 답했어. 각 답변에 대해 칭찬 1가지 + 보완점 또는 심화 질문 1가지를 간결하게 피드백해줘. 중학생 눈높이에 맞게, 따뜻하고 격려하는 말투로, 각 문항별로 번호를 붙여 써줘.
+
+[Q1] 김밥 아줌마를 '예술가'라고 부르는 이유:
+${document.getElementById('s2q1').value}
+
+[Q2] 빵떡모자 아저씨의 성격과 '예술가'적 면모:
+${document.getElementById('s2q2').value}
+
+[Q3] 서두의 역할:
+${document.getElementById('s2q3').value}`;
+
+  await getAIFeedback(prompt,'s2');
+  document.getElementById('s2-next').style.display='block';
   document.getElementById('s2-next').scrollIntoView({behavior:'smooth',block:'center'});
 }
 
@@ -602,27 +668,102 @@ function selectAgree(val){
   document.getElementById('agree-no').className='agree-opt'+(!val?' sel-no':'');
 }
 
-function submitStage3(){
+async function submitStage3(){
   const lens=['s3q1','s3q2','s3q3'].map(id=>document.getElementById(id).value.replace(/\s/g,'').length);
   if(lens.some(l=>l<40)){showToast('모든 질문에 40자 이상 써주세요!');return;}
   if(agreeSelected===null){showToast('Q.02에서 입장을 선택해주세요!');return;}
   score+=1200; stageScores[2]+=1200;
   updateHUD();
-  document.getElementById('s3-next').style.display='block';
+  document.getElementById('s3-submit-btn').disabled=true;
   showToast('STAGE 3 CLEAR! ★★★');
+
+  const agreeText=agreeSelected?'동의한다':'동의하지 않는다';
+  const prompt=`너는 중학교 국어 교사야. 학생이 양귀자의 수필 '길모퉁이에서 만난 사람'을 읽고 가치 판단 질문에 답했어. 각 답변에 대해 칭찬 1가지 + 생각을 더 넓힐 수 있는 질문이나 제안 1가지를 해줘. 중학생 눈높이에 맞게, 따뜻하고 격려하는 말투로, 각 문항별로 번호를 붙여 써줘.
+
+[Q1] 닮고 싶은 인물과 이유:
+${document.getElementById('s3q1').value}
+
+[Q2] 김대호 씨 같은 사람이 있는 것이 행복한 일이라는 말에 대한 입장 (${agreeText}):
+${document.getElementById('s3q2').value}
+
+[Q3] 내 주변의 '예술가':
+${document.getElementById('s3q3').value}`;
+
+  await getAIFeedback(prompt,'s3');
+  document.getElementById('s3-next').style.display='block';
   document.getElementById('s3-next').scrollIntoView({behavior:'smooth',block:'center'});
 }
 
 // ─────────────────────────────────────────
 // Stage 4
 // ─────────────────────────────────────────
-function submitStage4(){
+async function submitStage4(){
   const t1=document.getElementById('s4t1-partner').value.replace(/\s/g,'').length;
   const t2=document.getElementById('s4t2-partner').value.replace(/\s/g,'').length;
   if(t1<40||t2<40){showToast('짝이 말한 것을 40자 이상 정리해주세요!');return;}
   score+=1000; stageScores[3]+=1000;
   updateHUD();
-  showResult();
+  document.getElementById('s4-submit-btn').disabled=true;
+  showToast('짝과의 대화 완료! ★★★★');
+
+  const prompt=`너는 중학교 국어 교사야. 학생이 하브루타(짝과 대화) 활동 후 짝의 생각을 정리해서 제출했어. 아래 두 주제에 대해 짝의 생각을 잘 들었는지, 핵심을 잘 파악했는지 칭찬해주고, 대화를 더 깊게 나눌 수 있는 추가 질문을 하나씩 제안해줘. 따뜻하고 격려하는 말투로, 각 주제별로 번호를 붙여 써줘.
+
+[TOPIC 1] 평범한 사람을 '예술가'라 부를 수 있는 기준 — 짝의 생각:
+${document.getElementById('s4t1-partner').value}
+
+[TOPIC 2] 개성을 지키는 것 vs 사회에 맞추는 것 — 짝의 입장과 이유:
+${document.getElementById('s4t2-partner').value}`;
+
+  await getAIFeedback(prompt,'s4');
+
+  // 피드백 후 결과 보기 버튼 추가
+  const s4fb=document.getElementById('s4-feedback');
+  if(!document.getElementById('s4-to-result')){
+    const nextBtn=document.createElement('div');
+    nextBtn.id='s4-to-result';
+    nextBtn.style.cssText='text-align:center;padding:18px;background:rgba(68,170,255,.05);';
+    nextBtn.innerHTML='<button class="btn btn-yellow" onclick="showResult()">🏆 최종 결과 보기 ▶</button>';
+    s4fb.after(nextBtn);
+    nextBtn.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+}
+
+// ─────────────────────────────────────────
+// AI 피드백 공통 함수 (Gemini API)
+// ★ 아래 키를 선생님의 Gemini API 키로 교체하세요
+// ─────────────────────────────────────────
+const GEMINI_API_KEY = 'AIzaSyC3QoMYAwq_RbMJ3erpIsMtvd5PNWpZZNk';  // ← 여기에 API 키 붙여넣기
+
+async function getAIFeedback(prompt, stageId){
+  const loading=document.getElementById(stageId+'-loading');
+  const wrap=document.getElementById(stageId+'-feedback');
+  const body=document.getElementById(stageId+'-feedback-body');
+
+  loading.classList.add('show');
+  wrap.classList.remove('show');
+
+  try{
+    const res=await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+GEMINI_API_KEY,
+      {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
+      }
+    );
+    const data=await res.json();
+    const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'피드백을 받지 못했습니다.';
+    body.innerHTML=text
+      .replace(/\n/g,'<br>')
+      .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+    loading.classList.remove('show');
+    wrap.classList.add('show');
+    wrap.scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){
+    loading.classList.remove('show');
+    body.innerHTML='⚠ AI 피드백을 불러오지 못했습니다.<br>인터넷 연결을 확인해 주세요.';
+    wrap.classList.add('show');
+  }
 }
 
 // ─────────────────────────────────────────
