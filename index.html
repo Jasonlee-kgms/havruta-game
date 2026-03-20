@@ -732,7 +732,7 @@ ${document.getElementById('s4t2-partner').value}`;
 // AI 피드백 공통 함수 (Gemini API)
 // ★ 아래 키를 선생님의 Gemini API 키로 교체하세요
 // ─────────────────────────────────────────
-const GEMINI_API_KEY = 'AIzaSyA4NontIEwcejCt3HHF9Pb0F2pI3VZHp34';  // ← 여기에 API 키 붙여넣기
+const GEMINI_API_KEY = 'AIzaSyC3QoMYAwq_RbMJ3erpIsMtvd5PNWpZZNk';  // ← 여기에 API 키 붙여넣기
 
 async function getAIFeedback(prompt, stageId){
   const loading=document.getElementById(stageId+'-loading');
@@ -742,18 +742,38 @@ async function getAIFeedback(prompt, stageId){
   loading.classList.add('show');
   wrap.classList.remove('show');
 
+  if(!GEMINI_API_KEY){
+    loading.classList.remove('show');
+    body.innerHTML='⚠ Gemini API 키가 설정되지 않았습니다.';
+    wrap.classList.add('show');
+    return;
+  }
+
   try{
     const res=await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+GEMINI_API_KEY,
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+GEMINI_API_KEY,
       {
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})
+        body:JSON.stringify({
+          contents:[{parts:[{text:prompt}]}],
+          generationConfig:{maxOutputTokens:1000}
+        })
       }
     );
     const data=await res.json();
+
+    // 오류 응답 처리
+    if(data.error){
+      loading.classList.remove('show');
+      body.innerHTML='⚠ API 오류: '+data.error.message;
+      wrap.classList.add('show');
+      return;
+    }
+
     const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'피드백을 받지 못했습니다.';
     body.innerHTML=text
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
       .replace(/\n/g,'<br>')
       .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
     loading.classList.remove('show');
@@ -761,7 +781,7 @@ async function getAIFeedback(prompt, stageId){
     wrap.scrollIntoView({behavior:'smooth',block:'start'});
   }catch(e){
     loading.classList.remove('show');
-    body.innerHTML='⚠ AI 피드백을 불러오지 못했습니다.<br>인터넷 연결을 확인해 주세요.';
+    body.innerHTML='⚠ 네트워크 오류: '+e.message;
     wrap.classList.add('show');
   }
 }
