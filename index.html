@@ -447,26 +447,10 @@
   <!-- 교사 전송 패널 -->
   <div id="send-panel">
     <h3>📤 결과를 선생님께 전송</h3>
-    <div class="gas-guide">
-      <strong>📌 선생님용 Google Sheets 연동 방법</strong><br>
-      1. Google 스프레드시트 새로 만들기<br>
-      2. <strong>확장 프로그램 → Apps Script</strong> 열기<br>
-      3. 아래 코드 붙여넣고 저장:<br>
-      <code>function doPost(e){const s=SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();const d=JSON.parse(e.postData.contents);s.appendRow([new Date(),d.name,d.classInfo,d.score,d.s1_score,d.s1_details,d.s2q1,d.s2q2,d.s2q3,d.s3q1,d.s3q2_agree,d.s3q2,d.s3q3,d.s4t1_partner,d.s4t2_partner]);return ContentService.createTextOutput(JSON.stringify({result:'ok'})).setMimeType(ContentService.MimeType.JSON);}</code><br>
-      4. <strong>배포 → 새 배포 → 웹앱</strong> (액세스: 모든 사용자)<br>
-      5. 배포 URL을 아래 입력창에 붙여넣기
-    </div>
-
-    <div style="margin-bottom:14px;">
-      <div style="font-size:11px;color:var(--dim);margin-bottom:6px;">Google Apps Script 웹앱 URL (선생님이 설정)</div>
-      <input id="gas-url-input" style="width:100%;background:#0d0d1f;border:2px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:monospace;font-size:11px;" value="https://script.google.com/macros/s/여기에붙여넣기/exec" placeholder="https://script.google.com/macros/s/..." oninput="saveGasUrl()">
-    </div>
-
     <div class="btn-row" style="justify-content:center;flex-wrap:wrap;">
       <button class="btn btn-blue" onclick="sendToTeacher()">📡 선생님께 전송</button>
       <button class="btn btn-yellow" onclick="copyResults()">📋 결과 텍스트 복사</button>
     </div>
-
     <div class="send-status" id="send-status"></div>
     <div class="copy-box" id="copy-box"></div>
   </div>
@@ -493,7 +477,7 @@ let playerName='', playerClass='';
 
 // GAS URL을 로컬스토리지에 유지 (교사가 한 번만 입력하면 됨)
 window.addEventListener('DOMContentLoaded',()=>{
-  const saved=localStorage.getItem('gas_url')||'https://script.google.com/macros/s/여기에붙여넣기/exec';
+  const saved=localStorage.getItem('gas_url')||'';
   document.getElementById('gas-url-input').value=saved;
 });
 function saveGasUrl(){
@@ -706,7 +690,7 @@ function collectData(){
 // 전송 (GAS 웹앱)
 // ─────────────────────────────────────────
 async function sendToTeacher(){
-  const url='https://script.google.com/macros/s/여기에붙여넣기/exec';
+  const url=document.getElementById('gas-url-input').value.trim();
   const st=document.getElementById('send-status');
   if(!url){
     st.className='send-status error';
@@ -719,6 +703,7 @@ async function sendToTeacher(){
     await fetch(url,{
       method:'POST',
       mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify(collectData())
     });
     // no-cors 이므로 응답 내용을 읽을 수 없지만, 에러가 없으면 성공으로 처리
@@ -806,3 +791,4 @@ function launchConfetti(){
 </script>
 </body>
 </html>
+
